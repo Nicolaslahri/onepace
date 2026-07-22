@@ -1,3 +1,8 @@
 fastapi==0.136.1
 uvicorn[standard]==0.47.0
 pydantic==2.13.4
+
+# Mozilla's CA bundle, tried before the image's own trust store — see
+# app/core/tls_trust.py. Bump on every release; a bundle baked into an image
+# goes stale the same way the OS store does.
+certifi==2026.7.22

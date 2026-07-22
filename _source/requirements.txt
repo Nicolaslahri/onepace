@@ -1,0 +1,15 @@
+customtkinter==5.2.2
+
+# Mozilla's CA bundle. The app trusts this first and falls back to the OS
+# certificate store — see tls_trust.py. Without it, users whose Windows root
+# store predates ISRG Root X2 can't reach pixeldrain at all.
+#
+# Pin-bump this on every release: a bundle frozen into a .onefile .exe never
+# self-updates, so a stale pin reintroduces exactly the bug it fixes.
+certifi>=2026.7.22
+
+# Build:
+#   pyinstaller --onefile --windowed --collect-data certifi onepace_downloader.py
+# --collect-data certifi is required; PyInstaller won't find cacert.pem on its
+# own because nothing imports certifi at module scope.
+pyinstaller>=6.0

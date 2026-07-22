@@ -16,6 +16,7 @@ from ..config import (
     PIXELDRAIN_FILE,
     UA,
 )
+from . import tls_trust
 
 # ── Transient errors that justify a retry ─────────────────────────────
 
@@ -34,9 +35,13 @@ def http_get(url: str, *, timeout: int = 30, retries: int = 5) -> bytes:
     for attempt in range(retries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with tls_trust.urlopen(req, timeout=timeout) as r:
                 return r.read()
         except _TRANSIENT as e:
+            # A cert failure means every trust store we have was already
+            # tried — retrying just stalls the caller for ~30s. Bail out.
+            if tls_trust.is_cert_error(e):
+                raise
             last = e
             time.sleep(min(2 ** attempt, 15))
     raise last if last else RuntimeError("http_get failed")
@@ -50,8 +55,10 @@ def open_stream(url: str, *, start: int = 0, timeout: int = 60, retries: int = 5
     last: Exception | None = None
     for attempt in range(retries):
         try:
-            return urllib.request.urlopen(req, timeout=timeout)
+            return tls_trust.urlopen(req, timeout=timeout)
         except _TRANSIENT as e:
+            if tls_trust.is_cert_error(e):
+                raise
             last = e
             time.sleep(min(2 ** attempt, 15))
     raise last if last else RuntimeError("open_stream failed")
@@ -75,7 +82,7 @@ def open_stream_dual(file_id: str, *, start: int = 0, timeout: int = 60,
         headers["Range"] = f"bytes={start}-"
     try:
         req = urllib.request.Request(primary, headers=headers)
-        return urllib.request.urlopen(req, timeout=timeout), "pixeldrain.com"
+        return tls_trust.urlopen(req, timeout=timeout), "pixeldrain.com"
     except urllib.error.HTTPError as e:
         if e.code in (403, 429):
             log(f"  pixeldrain.com rate-limited (HTTP {e.code}) -- "

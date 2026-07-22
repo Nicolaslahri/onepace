@@ -13,6 +13,7 @@ import time
 import urllib.request
 
 from ..config import APP_VERSION, BUNDLED_INDEX_FILE, INDEX_FILE, REMOTE_INDEX_URL
+from . import tls_trust
 
 
 # ── Loading ───────────────────────────────────────────────────────────
@@ -41,7 +42,7 @@ def try_remote_refresh(config: dict, log=None) -> bool:
             REMOTE_INDEX_URL,
             headers={"User-Agent": f"OnePaceDownloader/{APP_VERSION}"},
         )
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with tls_trust.urlopen(req, timeout=30) as r:
             etag = r.headers.get("ETag") or ""
             blob = r.read()
     except Exception as e:

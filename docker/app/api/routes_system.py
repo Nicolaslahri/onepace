@@ -20,6 +20,7 @@ from ..config import (
 )
 from ..core.episode_index import load_episode_index, try_remote_refresh
 from ..core.log import all_entries as _all_log_entries, log as _log
+from ..core import tls_trust
 
 _SXXEYY_RE = re.compile(r"\bs(\d{2})e(\d{2})\b", re.IGNORECASE)
 _VIDEO_EXTS = (".mkv", ".mp4", ".m4v", ".avi", ".mov", ".ts")
@@ -144,7 +145,7 @@ def update_check():
                 "User-Agent": "OnePaceDownloader",
                 "Accept": "application/vnd.github+json",
             })
-            with urllib.request.urlopen(req, timeout=10) as r:
+            with tls_trust.urlopen(req, timeout=10) as r:
                 commits = json.loads(r.read())
             if commits:
                 latest = commits[0].get("sha", "")

@@ -28,6 +28,7 @@ from pathlib import Path
 
 # Reuse helpers + constants from the main app
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import tls_trust  # noqa: E402
 from onepace_downloader import (  # noqa: E402
     PIXELDRAIN_API,
     _NYAA_ARC_ALIASES,
@@ -111,7 +112,7 @@ def fetch_spyker_latest_sha(timeout: int = 15) -> str | None:
         req = urllib.request.Request(
             SPYKER_LATEST_COMMIT_API,
             headers={"User-Agent": "OnePaceDownloader (refresh-cache)"})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with tls_trust.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read()).get("sha")
     except Exception:
         return None

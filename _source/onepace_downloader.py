@@ -24,6 +24,8 @@ import customtkinter as ctk
 # Local module — DNS detection + UAC-elevated netsh switching
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dns_switcher
+# Local module — certifi-first TLS trust (see tls_trust.py for the why)
+import tls_trust
 
 DISCORD_URL = "https://discord.gg/KHn6AbevZ2"
 REDDIT_URL = "https://www.reddit.com/user/nicolasenjah/"
@@ -242,9 +244,13 @@ def http_get(url: str, *, timeout: int = 30, retries: int = 5) -> bytes:
     for attempt in range(retries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with tls_trust.urlopen(req, timeout=timeout) as r:
                 return r.read()
         except _TRANSIENT as e:
+            # A cert failure means every trust store we have was already
+            # tried — retrying just stalls the user for ~30s. Bail out.
+            if tls_trust.is_cert_error(e):
+                raise
             last = e
             time.sleep(min(2 ** attempt, 15))
     raise last if last else RuntimeError("http_get failed")
@@ -258,8 +264,10 @@ def open_stream(url: str, *, start: int = 0, timeout: int = 60, retries: int = 5
     last: Exception | None = None
     for attempt in range(retries):
         try:
-            return urllib.request.urlopen(req, timeout=timeout)
+            return tls_trust.urlopen(req, timeout=timeout)
         except _TRANSIENT as e:
+            if tls_trust.is_cert_error(e):
+                raise
             last = e
             time.sleep(min(2 ** attempt, 15))
     raise last if last else RuntimeError("open_stream failed")
@@ -290,7 +298,7 @@ def open_stream_dual(file_id: str, *, start: int = 0, timeout: int = 60,
         headers["Range"] = f"bytes={start}-"
     try:
         req = urllib.request.Request(primary, headers=headers)
-        return urllib.request.urlopen(req, timeout=timeout), "pixeldrain.com"
+        return tls_trust.urlopen(req, timeout=timeout), "pixeldrain.com"
     except urllib.error.HTTPError as e:
         if e.code in (403, 429):
             log(f"  pixeldrain.com rate-limited (HTTP {e.code}) — falling "
@@ -4173,7 +4181,7 @@ class App(ctk.CTk):
                 req = urllib.request.Request(
                     api_url,
                     headers={"User-Agent": f"OnePaceDownloader/{APP_VERSION}"})
-                with urllib.request.urlopen(req, timeout=60) as r:
+                with tls_trust.urlopen(req, timeout=60) as r:
                     blob = r.read()
                 if len(blob) < 200 or b"<nzb" not in blob[:2000]:
                     # Likely an error response, not an NZB
@@ -4306,7 +4314,7 @@ class App(ctk.CTk):
                     REMOTE_INDEX_URL, method="HEAD",
                     headers={"User-Agent":
                              f"OnePaceDownloader/{APP_VERSION}"})
-                with urllib.request.urlopen(req, timeout=15) as r:
+                with tls_trust.urlopen(req, timeout=15) as r:
                     etag = r.headers.get("ETag") or ""
                 if etag and etag != cached:
                     self.ui_queue.put(("updates_available", True))
@@ -4382,7 +4390,7 @@ class App(ctk.CTk):
             req = urllib.request.Request(
                 REMOTE_INDEX_URL,
                 headers={"User-Agent": f"OnePaceDownloader/{APP_VERSION}"})
-            with urllib.request.urlopen(req, timeout=30) as r:
+            with tls_trust.urlopen(req, timeout=30) as r:
                 etag = r.headers.get("ETag") or ""
                 blob = r.read()
         except Exception as e:
@@ -5395,7 +5403,7 @@ class SettingsPanel(ModalOverlay):
                     test_url,
                     headers={"User-Agent": f"OnePaceDownloader/{APP_VERSION}"}
                 )
-                with urllib.request.urlopen(req, timeout=10) as r:
+                with tls_trust.urlopen(req, timeout=10) as r:
                     content = r.read()
                 content_str = content.decode("utf-8", errors="replace")
                 if 'error code="100"' in content_str or "Incorrect credentials" in content_str:

@@ -22,6 +22,7 @@ from ..core.episode_index import (
     usenet_source_for,
 )
 from ..core.log import log as _log
+from ..core import tls_trust
 from ..core.models import (
     SendResult,
     SettingsPayload,
@@ -214,7 +215,7 @@ def test_nzbgeek(payload: SettingsPayload):
     try:
         req = urllib.request.Request(
             test_url, headers={"User-Agent": "OnePaceDownloader"})
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with tls_trust.urlopen(req, timeout=20) as r:
             body = r.read()[:600].lower()
         if b"<error" in body or b"invalid api" in body:
             return {"ok": False, "message": "Invalid API key."}

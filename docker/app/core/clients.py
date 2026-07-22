@@ -15,6 +15,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from . import tls_trust
 from .downloader import fmt_bytes
 
 _TIMEOUT = 20
@@ -43,7 +44,7 @@ class SABnzbdClient:
         try:
             req = urllib.request.Request(
                 endpoint, headers={"User-Agent": "OnePaceDownloader"})
-            with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
+            with tls_trust.urlopen(req, timeout=_TIMEOUT) as r:
                 body = r.read()
         except urllib.error.HTTPError as e:
             raise ClientError(f"SABnzbd HTTP {e.code}") from e
