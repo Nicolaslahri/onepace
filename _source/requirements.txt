@@ -8,8 +8,7 @@ customtkinter==5.2.2
 # self-updates, so a stale pin reintroduces exactly the bug it fixes.
 certifi>=2026.7.22
 
-# Build:
-#   pyinstaller --onefile --windowed --collect-data certifi onepace_downloader.py
-# --collect-data certifi is required; PyInstaller won't find cacert.pem on its
-# own because nothing imports certifi at module scope.
+# Build with .\build.ps1 — it carries the --collect-data certifi flag and the
+# --add-data list for the bundled .json catalogs. Building by hand without
+# those produces an .exe that either can't reach pixeldrain or has no data.
 pyinstaller>=6.0

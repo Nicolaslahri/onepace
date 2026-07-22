@@ -32,7 +32,7 @@ UA = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
 )
 
-APP_VERSION = "2.0.3"
+APP_VERSION = "2.0.5"
 
 # Git commit the image was built from — baked in by the Dockerfile via a
 # build arg. Empty / "dev" for local builds. Used for the update check.
