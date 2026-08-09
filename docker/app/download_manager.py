@@ -181,9 +181,8 @@ class DownloadManager:
                     job.current_file = msg
 
                 def on_progress(frac, speed, idx, total, _bytes):
-                    base = done_eps / total_eps if total_eps else 0
-                    chunk = (1 / total_eps) if total_eps else 0
-                    job.progress = min(base + chunk * frac, 1.0)
+                    completed = done_eps + (idx - 1) + frac
+                    job.progress = min(completed / total_eps, 1.0) if total_eps else 0.0
                     job.speed = speed
                     job.current_idx = done_eps + idx
                     job.total_files = total_eps
